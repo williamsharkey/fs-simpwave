@@ -142,13 +142,6 @@ function _sw_open() {
     created: Date.now()
   };
 
-  // Also register with ALGO.pubsub if available
-  if (window.ALGO && ALGO.pubsub) {
-    ALGO.pubsub.register('simpwave', { autoOpen: false });
-    ALGO.pubsub.subscribe('simpwave', (msg, opts, from) => {
-      _sw_handleMidiInput(instId, msg, { sender: from });
-    });
-  }
 
   const waveformBtns = _sw_waveforms.map(w =>
     `<button onclick="window._sw_setWaveform('${instId}','${w}')" id="sw-wave-${w}-${winId}" class="win95-btn${w === 'sawtooth' ? ' active' : ''}" style="font-size:12px;padding:4px 10px;">
@@ -579,6 +572,20 @@ function _sw_startViz(instId) {
   }
 
   draw();
+}
+
+// Global MIDI handler that routes to first active instance
+function _sw_globalMidiHandler(message, opts, from) {
+  const instId = Object.keys(_sw_state.instances)[0];
+  if (instId) {
+    _sw_handleMidiInput(instId, message, { sender: from });
+  }
+}
+
+// Register with pubsub at load time so Ivory can see it as a destination
+if (window.ALGO && ALGO.pubsub) {
+  ALGO.pubsub.register('Simpwave', { autoOpen: false });
+  ALGO.pubsub.subscribe('Simpwave', _sw_globalMidiHandler);
 }
 
 // Expose globals
